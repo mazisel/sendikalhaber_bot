@@ -1,0 +1,16 @@
+services:
+  sendikalhaber-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: sendikalhaber-bot:latest
+    container_name: sendikalhaber-bot
+    restart: unless-stopped
+    environment:
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_ALLOWED_CHAT_IDS: ${TELEGRAM_ALLOWED_CHAT_IDS:-}
+    volumes:
+      - sendikalhaber_bot_storage:/app/storage
+
+volumes:
+  sendikalhaber_bot_storage:

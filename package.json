@@ -1,0 +1,28 @@
+{
+  "name": "haber_telegram_bot",
+  "version": "1.0.0",
+  "description": "Instagram haber story gorseli ve videosu ureten Telegram botu",
+  "main": "src/bot.js",
+  "scripts": {
+    "bot": "node src/bot.js",
+    "sample": "node src/cli.js sample",
+    "render": "node src/cli.js render",
+    "check": "node src/cli.js sample --skip-video"
+  },
+  "keywords": [
+    "telegram",
+    "instagram",
+    "news",
+    "story",
+    "video"
+  ],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "ffmpeg-static": "^5.3.0",
+    "sharp": "^0.35.1",
+    "telegraf": "^4.16.3"
+  }
+}
