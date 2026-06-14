@@ -9,6 +9,7 @@ services:
     environment:
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
       TELEGRAM_ALLOWED_CHAT_IDS: ${TELEGRAM_ALLOWED_CHAT_IDS:-}
+      TELEGRAM_HANDLER_TIMEOUT_MS: ${TELEGRAM_HANDLER_TIMEOUT_MS:-600000}
     volumes:
       - sendikalhaber_bot_storage:/app/storage
 

@@ -1,6 +1,6 @@
 "use strict";
 
-require("dotenv").config();
+require("dotenv").config({ quiet: true });
 
 const fs = require("fs/promises");
 const path = require("path");
@@ -17,14 +17,20 @@ if (!token) {
 const ROOT = path.resolve(__dirname, "..");
 const VIDEO_DURATION = 15;
 const VIDEO_FPS = 30;
+const HANDLER_TIMEOUT_MS = readPositiveNumberEnv("TELEGRAM_HANDLER_TIMEOUT_MS", 10 * 60 * 1000);
 const allowedChatIds = (process.env.TELEGRAM_ALLOWED_CHAT_IDS || "")
   .split(",")
   .map((value) => value.trim())
   .filter(Boolean);
 
-const bot = new Telegraf(token);
+const bot = new Telegraf(token, { handlerTimeout: HANDLER_TIMEOUT_MS });
 const sessions = new Map();
 const renderedJobs = new Map();
+
+function readPositiveNumberEnv(name, fallback) {
+  const value = Number(process.env[name]);
+  return Number.isFinite(value) && value > 0 ? value : fallback;
+}
 
 const steps = [
   {
@@ -369,7 +375,9 @@ bot.telegram
   .catch(() => {});
 
 bot.launch();
-console.log(`Telegram bot calisiyor. Video suresi: ${VIDEO_DURATION} saniye.`);
+console.log(
+  `Telegram bot calisiyor. Video suresi: ${VIDEO_DURATION} saniye. Handler timeout: ${HANDLER_TIMEOUT_MS} ms.`
+);
 
 process.once("SIGINT", () => bot.stop("SIGINT"));
 process.once("SIGTERM", () => bot.stop("SIGTERM"));

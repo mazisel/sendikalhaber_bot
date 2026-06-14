@@ -18,6 +18,7 @@ cp .env.example .env
 ```bash
 TELEGRAM_BOT_TOKEN=123456:telegram-bot-token
 TELEGRAM_ALLOWED_CHAT_IDS=
+TELEGRAM_HANDLER_TIMEOUT_MS=600000
 ```
 
 `TELEGRAM_ALLOWED_CHAT_IDS` bos kalirsa bot herkese acik calisir. Sadece belirli
@@ -25,6 +26,13 @@ sohbetlerde kullanmak isterseniz chat ID'leri virgulle yazabilirsiniz:
 
 ```bash
 TELEGRAM_ALLOWED_CHAT_IDS=123456789,987654321
+```
+
+Video uretimi ve Telegram upload'i yavas ortamlarda 90 saniyeyi asabilir.
+Bu yuzden bot varsayilan handler timeout'unu 10 dakika kullanir:
+
+```bash
+TELEGRAM_HANDLER_TIMEOUT_MS=600000
 ```
 
 ## Ornek cikti alma
@@ -77,10 +85,14 @@ Stack environment alanina sunlari girin:
 ```bash
 TELEGRAM_BOT_TOKEN=123456:telegram-bot-token
 TELEGRAM_ALLOWED_CHAT_IDS=
+TELEGRAM_HANDLER_TIMEOUT_MS=600000
 ```
 
 Bot long polling ile calisir; disariya port acmaniz gerekmez. Uretilen dosyalar
 Docker volume olarak `/app/storage` altinda tutulur.
+
+Container logunda `Fontconfig error: Cannot load default config file` gorurseniz
+eski imaj calisiyor demektir. Portainer'da stack'i yeniden build/recreate edin.
 
 ## Manuel render
 
