@@ -3,7 +3,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: sendikalhaber-bot:latest
     container_name: sendikalhaber-bot
     restart: unless-stopped
     environment:
