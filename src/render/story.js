@@ -3,7 +3,7 @@
 const fs = require("fs/promises");
 const path = require("path");
 const sharp = require("sharp");
-const { escapeXml, multilineText } = require("./text");
+const { escapeXml, multilineText, wrapText } = require("./text");
 
 const ROOT = path.resolve(__dirname, "../..");
 const WIDTH = 1080;
@@ -133,6 +133,24 @@ async function createStorySvg(input = {}) {
   const photoHeight = 432 * photoZoom;
   const photoX = 91 - (photoWidth - 898) / 2 - photoPanX;
   const photoY = 467 - (photoHeight - 432) / 2;
+  const titleLayout = {
+    x: 139,
+    y: 1025,
+    maxWidth: 790,
+    fontSize: 58,
+    lineHeight: 62,
+    maxLines: 3,
+  };
+  const titleLines = wrapText(
+    data.title,
+    titleLayout.maxWidth,
+    titleLayout.fontSize,
+    titleLayout.maxLines
+  );
+  const bodyY = Math.max(
+    1153,
+    titleLayout.y + Math.max(1, titleLines.length) * titleLayout.lineHeight + 4
+  );
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}">
@@ -171,14 +189,14 @@ async function createStorySvg(input = {}) {
     <g opacity="${title.opacity}" transform="${title.transform}">
     ${multilineText({
       text: data.title,
-      x: 139,
-      y: 1025,
-      maxWidth: 790,
-      fontSize: 58,
-      lineHeight: 62,
+      x: titleLayout.x,
+      y: titleLayout.y,
+      maxWidth: titleLayout.maxWidth,
+      fontSize: titleLayout.fontSize,
+      lineHeight: titleLayout.lineHeight,
       fill: "#ffffff",
       weight: 400,
-      maxLines: 3,
+      maxLines: titleLayout.maxLines,
     })}
     </g>
 
@@ -186,7 +204,7 @@ async function createStorySvg(input = {}) {
     ${multilineText({
       text: data.body,
       x: 139,
-      y: 1153,
+      y: bodyY,
       maxWidth: 780,
       fontSize: 30,
       lineHeight: 39,

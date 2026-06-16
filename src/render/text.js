@@ -11,47 +11,113 @@ function escapeXml(value) {
 function estimateTextWidth(text, fontSize) {
   let width = 0;
   for (const char of String(text)) {
-    if (char === " ") width += fontSize * 0.28;
-    else if ("ilIıİ.,:;!|'".includes(char)) width += fontSize * 0.28;
-    else if ("MWĞÜŞÖÇ@#%&".includes(char)) width += fontSize * 0.82;
-    else if (char >= "A" && char <= "Z") width += fontSize * 0.64;
-    else width += fontSize * 0.52;
+    if (char === " ") width += fontSize * 0.32;
+    else if ("ilIıİ.,:;!|'".includes(char)) width += fontSize * 0.32;
+    else if ("MWĞÜŞÖÇ@#%&".includes(char)) width += fontSize * 0.86;
+    else if (char >= "A" && char <= "Z") width += fontSize * 0.68;
+    else width += fontSize * 0.58;
   }
   return width;
 }
 
-function wrapText(text, maxWidth, fontSize, maxLines = Infinity) {
-  const paragraphs = String(text ?? "")
-    .replace(/\s+\n/g, "\n")
-    .split(/\n+/)
-    .map((part) => part.trim())
-    .filter(Boolean);
+function splitLongToken(token, maxWidth, fontSize) {
+  if (estimateTextWidth(token, fontSize) <= maxWidth) return [token];
 
-  const lines = [];
-  for (const paragraph of paragraphs.length ? paragraphs : [""]) {
-    const words = paragraph.split(/\s+/).filter(Boolean);
-    let line = "";
-
-    for (const word of words) {
-      const candidate = line ? `${line} ${word}` : word;
-      if (estimateTextWidth(candidate, fontSize) <= maxWidth || !line) {
-        line = candidate;
-      } else {
-        lines.push(line);
-        line = word;
-        if (lines.length >= maxLines) break;
-      }
+  const chunks = [];
+  let chunk = "";
+  for (const char of Array.from(token)) {
+    const candidate = `${chunk}${char}`;
+    if (!chunk || estimateTextWidth(candidate, fontSize) <= maxWidth) {
+      chunk = candidate;
+    } else {
+      chunks.push(chunk);
+      chunk = char;
     }
-
-    if (line && lines.length < maxLines) lines.push(line);
-    if (lines.length >= maxLines) break;
   }
 
-  if (lines.length === maxLines) {
-    const last = lines[lines.length - 1];
-    if (estimateTextWidth(last, fontSize) > maxWidth) {
-      lines[lines.length - 1] = `${last.slice(0, Math.max(0, last.length - 2)).trim()}...`;
+  if (chunk) chunks.push(chunk);
+  return chunks;
+}
+
+function wrapLogicalLine(line, maxWidth, fontSize) {
+  const words = line.split(/\s+/).filter(Boolean);
+  const lines = [];
+  let current = "";
+
+  for (const word of words) {
+    if (estimateTextWidth(word, fontSize) > maxWidth) {
+      if (current) {
+        lines.push(current);
+        current = "";
+      }
+
+      const chunks = splitLongToken(word, maxWidth, fontSize);
+      lines.push(...chunks.slice(0, -1));
+      current = chunks.at(-1) || "";
+      continue;
     }
+
+    const candidate = current ? `${current} ${word}` : word;
+    if (!current || estimateTextWidth(candidate, fontSize) <= maxWidth) {
+      current = candidate;
+    } else {
+      lines.push(current);
+      current = word;
+    }
+  }
+
+  if (current) lines.push(current);
+  return lines;
+}
+
+function truncateToWidth(text, maxWidth, fontSize) {
+  const ellipsis = "...";
+  if (estimateTextWidth(ellipsis, fontSize) > maxWidth) return "";
+
+  const original = String(text ?? "").trimEnd();
+  if (!original) return ellipsis;
+  if (estimateTextWidth(`${original}${ellipsis}`, fontSize) <= maxWidth) {
+    return `${original}${ellipsis}`;
+  }
+
+  const chars = Array.from(original);
+  while (chars.length) {
+    chars.pop();
+    const candidate = `${chars.join("").trimEnd()}${ellipsis}`;
+    if (estimateTextWidth(candidate, fontSize) <= maxWidth) return candidate;
+  }
+
+  return ellipsis;
+}
+
+function wrapText(text, maxWidth, fontSize, maxLines = Infinity) {
+  const lineLimit = Number.isFinite(maxLines)
+    ? Math.max(0, Math.floor(maxLines))
+    : Infinity;
+  if (lineLimit === 0) return [];
+
+  const inputLines = String(text ?? "")
+    .replace(/\r\n?/g, "\n")
+    .split("\n");
+
+  while (inputLines.length && !inputLines[0].trim()) inputLines.shift();
+  while (inputLines.length && !inputLines[inputLines.length - 1].trim()) inputLines.pop();
+
+  const lines = [];
+  for (const rawLine of inputLines) {
+    const line = rawLine.replace(/\t/g, "  ").trim();
+    if (!line) {
+      if (lines.length && lines[lines.length - 1] !== "") lines.push("");
+      continue;
+    }
+
+    lines.push(...wrapLogicalLine(line, maxWidth, fontSize));
+  }
+
+  if (lineLimit !== Infinity && lines.length > lineLimit) {
+    const limited = lines.slice(0, lineLimit);
+    limited[lineLimit - 1] = truncateToWidth(limited[lineLimit - 1], maxWidth, fontSize);
+    return limited;
   }
 
   return lines;
@@ -75,7 +141,7 @@ function multilineText({
   const tspans = lines
     .map((line, index) => {
       const dy = index === 0 ? 0 : lineHeight;
-      return `<tspan x="${x}" dy="${dy}">${escapeXml(line)}</tspan>`;
+      return `<tspan x="${x}" dy="${dy}">${escapeXml(line || " ")}</tspan>`;
     })
     .join("");
 
@@ -86,6 +152,7 @@ function multilineText({
     `font-weight="${weight}"`,
     `fill="${fill}"`,
     `text-anchor="${anchor}"`,
+    `xml:space="preserve"`,
     `opacity="${opacity}"`,
     transform ? `transform="${transform}"` : "",
     `>${tspans}</text>`,
